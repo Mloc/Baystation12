@@ -24,6 +24,8 @@
 	var/n_tag = null
 	var/obj/machinery/power/terminal/terminal = null
 
+	var/list/overlay_images
+
 
 /obj/machinery/power/smes/New()
 	..()
@@ -45,19 +47,37 @@
 
 /obj/machinery/power/smes/proc/updateicon()
 	overlays.Cut()
-	if(stat & BROKEN)	return
+	if(stat & BROKEN) return
 
-	overlays += image('icons/obj/power.dmi', "smes-op[online]")
+	if(isnull(src.overlay_images))
+		src.overlay_images = new
+		src.overlay_images.len = 3
 
-	if(charging)
-		overlays += image('icons/obj/power.dmi', "smes-oc1")
+		src.overlay_images[1] = image('icons/obj/power.dmi', "smes-op[online]")
+		src.overlay_images[2] = image('icons/obj/power.dmi', "smes-oc0")
+		src.overlay_images[3] = image('icons/obj/power.dmi', "smes-og1")
+
+	var/image/buffer
+
+	buffer = src.overlay_images[1]
+	buffer.icon_state = "smes-op[online]"
+	overlays += src.overlay_images[1]
+
+	if(!charging && chargemode)
+		buffer = src.overlay_images[2]
+		buffer.icon_state = "smes-oc0"
+		overlays += src.overlay_images[2]
 	else
-		if(chargemode)
-			overlays += image('icons/obj/power.dmi', "smes-oc0")
+		buffer = src.overlay_images[2]
+		buffer.icon_state = "smes-oc1"
+		overlays += src.overlay_images[2]
 
 	var/clevel = chargedisplay()
-	if(clevel>0)
-		overlays += image('icons/obj/power.dmi', "smes-og[clevel]")
+	if(clevel > 0)
+		buffer = src.overlay_images[3]
+		buffer.icon_state = "smes-og[clevel]"
+		overlays += src.overlay_images[3]
+
 	return
 
 

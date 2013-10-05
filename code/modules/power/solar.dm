@@ -35,6 +35,8 @@ var/list/solars_list = list()
 	var/turn_angle = 0
 	var/obj/machinery/power/solar_control/control = null
 
+	var/image/overlay_image //overlay cache image
+
 /obj/machinery/power/solar/New(var/turf/loc, var/obj/item/solar_assembly/S, var/process = 1)
 	..(loc)
 	Make(S)
@@ -102,11 +104,15 @@ var/list/solars_list = list()
 /obj/machinery/power/solar/update_icon()
 	..()
 	overlays.Cut()
+	if(isnull(src.overlay_image))
+		src.overlay_image = image('icons/obj/power.dmi', layer = FLY_LAYER)
+
 	if(stat & BROKEN)
-		overlays += image('icons/obj/power.dmi', icon_state = "solar_panel-b", layer = FLY_LAYER)
+		src.overlay_image.icon_state = "solar_panel-b"
 	else
-		overlays += image('icons/obj/power.dmi', icon_state = "solar_panel", layer = FLY_LAYER)
+		src.overlay_image.icon_state = "solar_panel"
 		src.dir = angle2dir(adir)
+	src.overlays += src.overlay_image
 	return
 
 
@@ -282,6 +288,8 @@ var/list/solars_list = list()
 	var/trackdir = 1		// -1=CCW, 1=CW
 	var/nexttime = 0		// Next clock time that manual tracking will move the array
 
+	var/image/overlay_image
+
 
 /obj/machinery/power/solar_control/New()
 	..()
@@ -304,20 +312,21 @@ var/list/solars_list = list()
 	set_panels(cdir)
 
 /obj/machinery/power/solar_control/update_icon()
+	overlays.Cut()
+	if(isnull(src.overlay_image))
+		src.overlay_image = image('icons/obj/computer.dmi', "solcon-o", layer = FLY_LAYER)
+
 	if(stat & BROKEN)
 		icon_state = "broken"
-		overlays.Cut()
 		return
 	if(stat & NOPOWER)
 		icon_state = "c_unpowered"
-		overlays.Cut()
 		return
-	icon_state = "solar"
-	overlays.Cut()
-	if(cdir > 0)
-		overlays += image('icons/obj/computer.dmi', "solcon-o", FLY_LAYER, angle2dir(cdir))
-	return
 
+	icon_state = "solar"
+	if(cdir > 0)
+		overlays += src.overlay_image //it doesn't change.
+	return
 
 /obj/machinery/power/solar_control/attack_ai(mob/user)
 	add_fingerprint(user)
