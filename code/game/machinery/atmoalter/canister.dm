@@ -323,15 +323,17 @@ Release Pressure: <A href='?src=\ref[src];pressure_adj=-1000'>-</A> <A href='?sr
 //Dirty way to fill room with gas. However it is a bit easier to do than creating some floor/engine/n2o -rastaf0
 /obj/machinery/portable_atmospherics/canister/sleeping_agent/roomfiller/New()
 	..()
-	var/datum/gas/sleeping_agent/trace_gas = air_contents.trace_gases[1]
-	trace_gas.moles = 9*4000
-	spawn(10)
-		var/turf/simulated/location = src.loc
-		if (istype(src.loc))
-			while (!location.air)
-				sleep(10)
-			location.assume_air(air_contents)
-			air_contents = new
+	var/turf/simulated/my_turf = get_turf(src)
+	if(!istype(my_turf))
+		return 1
+
+	var/datum/gas_mixture/turf_air = my_turf.return_air()
+	if(!turf_air)
+		return 1
+
+	var/datum/gas/sleeping_agent/trace_gas = new
+	trace_gas.moles = turf_air.group_multiplier*4000
+	turf_air.adjust(traces = list(trace_gas))
 	return 1
 
 /obj/machinery/portable_atmospherics/canister/nitrogen/New()

@@ -152,12 +152,12 @@
 			bodytemperature += diff
 
 		if(istype(T,/turf/simulated))
-			var/turf/simulated/ST = T
-			if(ST.air)
-				var/tox = ST.air.toxins
-				var/oxy = ST.air.oxygen
-				var/n2  = ST.air.nitrogen
-				var/co2 = ST.air.carbon_dioxide
+			var/datum/gas_mixture/sim_air = T.return_air()
+			if(sim_air)
+				var/tox = sim_air.toxins
+				var/oxy = sim_air.oxygen
+				var/n2  = sim_air.nitrogen
+				var/co2 = sim_air.carbon_dioxide
 
 				if(min_oxy)
 					if(oxy < min_oxy)

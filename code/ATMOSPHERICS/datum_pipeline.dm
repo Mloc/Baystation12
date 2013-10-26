@@ -149,10 +149,6 @@ datum/pipeline
 			air.merge(air_sample)
 			//turf_air already modified by equalize_gases()
 
-		if(istype(target) && !target.processing)
-			if(target.air)
-				if(target.air.check_tile_graphic())
-					target.update_visuals(target.air)
 		if(network)
 			network.update = 1
 
@@ -178,12 +174,9 @@ datum/pipeline
 				var/delta_temperature = 0
 				var/sharer_heat_capacity = 0
 
-				if(modeled_location.zone)
-					delta_temperature = (air.temperature - modeled_location.zone.air.temperature)
-					sharer_heat_capacity = modeled_location.zone.air.heat_capacity()
-				else
-					delta_temperature = (air.temperature - modeled_location.air.temperature)
-					sharer_heat_capacity = modeled_location.air.heat_capacity()
+				var/datum/gas_mixture/modeled_air = modeled_location.return_air()
+				delta_temperature = (air.temperature - modeled_air.temperature)
+				sharer_heat_capacity = modeled_air.heat_capacity()
 
 				var/self_temperature_delta = 0
 				var/sharer_temperature_delta = 0
@@ -199,10 +192,7 @@ datum/pipeline
 
 				air.temperature += self_temperature_delta
 
-				if(modeled_location.zone)
-					modeled_location.zone.air.temperature += sharer_temperature_delta/modeled_location.zone.air.group_multiplier
-				else
-					modeled_location.air.temperature += sharer_temperature_delta
+				modeled_air.temperature += sharer_temperature_delta/modeled_air.group_multiplier
 
 
 		else

@@ -140,6 +140,9 @@ var/datum/controller/air_system/air_master
 			if(S.CanPass(null, S, 0, 0))
 				new/zone(S)
 
+	for(var/zone/Z in zones)
+		Z.SleepIfPossible(skip_unsim_settle = 1)
+
 	for(var/turf/simulated/S in world)
 		S.update_air_properties()
 

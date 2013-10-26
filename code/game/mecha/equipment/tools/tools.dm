@@ -915,14 +915,15 @@
 		if(!T)
 			return
 		var/datum/gas_mixture/GM = new
+		var/datum/gas_mixture/turf_air = T.return_air()
 		if(prob(10))
-			GM.toxins += 100
+			GM.adjust(toxins = 100)
 			GM.temperature = 1500+T0C //should be enough to start a fire
 			T.visible_message("The [src] suddenly disgorges a cloud of heated plasma.")
 			destroy()
 		else
-			GM.toxins += 5
-			GM.temperature = istype(T) ? T.air.temperature : T20C
+			GM.adjust(toxins = 5)
+			GM.temperature = istype(turf_air) ? turf_air.temperature : T20C
 			T.visible_message("The [src] suddenly disgorges a cloud of plasma.")
 		T.assume_air(GM)
 		return

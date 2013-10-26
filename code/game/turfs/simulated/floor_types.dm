@@ -3,7 +3,7 @@
 	name = "airless floor"
 	oxygen = 0.01
 	nitrogen = 0.01
-	temperature = TCMB
+	temperature = T20C
 
 	New()
 		..()
@@ -88,7 +88,7 @@
 	icon_state = "engine"
 	oxygen = 0
 	nitrogen = 0.001
-	temperature = TCMB
+	temperature = T20C
 
 /turf/simulated/floor/plating
 	name = "plating"
@@ -101,7 +101,7 @@
 	name = "airless plating"
 	oxygen = 0.01
 	nitrogen = 0.01
-	temperature = TCMB
+	temperature = T20C
 
 	New()
 		..()

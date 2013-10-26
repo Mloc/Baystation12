@@ -49,12 +49,16 @@ var/list/CounterDoorDirections = list(SOUTH,EAST) //Which directions doors turfs
 	//defined at startup.
 	air = new
 	air.group_multiplier = contents.len
-	for(var/turf/simulated/T in contents)
-		air.oxygen += T.oxygen / air.group_multiplier
-		air.nitrogen += T.nitrogen / air.group_multiplier
-		air.carbon_dioxide += T.carbon_dioxide / air.group_multiplier
-		air.toxins += T.toxins / air.group_multiplier
-		air.temperature += T.temperature / air.group_multiplier
+	if(unsimulated_tiles && unsimulated_tiles.len)
+		UpdateUnsimAvg()
+		air.copy_from(air_unsim)
+	else
+		for(var/turf/simulated/T in contents)
+			air.oxygen += T.oxygen / air.group_multiplier
+			air.nitrogen += T.nitrogen / air.group_multiplier
+			air.carbon_dioxide += T.carbon_dioxide / air.group_multiplier
+			air.toxins += T.toxins / air.group_multiplier
+			air.temperature += T.temperature / air.group_multiplier
 	air.update_values()
 
 	//Add this zone to the global list.
@@ -155,7 +159,10 @@ var/list/CounterDoorDirections = list(SOUTH,EAST) //Which directions doors turfs
 
 //Updates the air_unsim var
 /zone/proc/UpdateUnsimAvg()
-	if(!unsim_air_needs_update)
+	if(!unsimulated_tiles || !unsimulated_tiles.len) //if we don't have any unsimulated tiles, we can't do much.
+		return
+
+	if(!unsim_air_needs_update && air_unsim) //if air_unsim doesn't exist, we need to create it even if we don't need an update.
 		return
 
 	unsim_air_needs_update = 0
@@ -366,7 +373,7 @@ var/list/CounterDoorDirections = list(SOUTH,EAST) //Which directions doors turfs
 	progress = "all components completed successfully, the problem is not here"
 
 
-/zone/proc/SetStatus(var/new_status)
+/zone/proc/SetStatus(var/new_status, var/skip_unsim_settle = 0)
 	if(status == ZONE_SLEEPING  && new_status == ZONE_ACTIVE)
 		air_master.active_zones.Add(src)
 		status = ZONE_ACTIVE
@@ -375,7 +382,7 @@ var/list/CounterDoorDirections = list(SOUTH,EAST) //Which directions doors turfs
 		air_master.active_zones.Remove(src)
 		status = ZONE_SLEEPING
 
-		if(unsimulated_tiles && unsimulated_tiles.len)
+		if(!skip_unsim_settle && unsimulated_tiles && unsimulated_tiles.len)
 			UpdateUnsimAvg()
 			air.copy_from(air_unsim)
 
@@ -389,7 +396,8 @@ var/list/CounterDoorDirections = list(SOUTH,EAST) //Which directions doors turfs
 
 
 /zone/proc/ActivateIfNeeded()
-	if(status == ZONE_ACTIVE) return
+	if(status == ZONE_ACTIVE)
+		return
 
 	var/difference = 0
 
@@ -406,6 +414,29 @@ var/list/CounterDoorDirections = list(SOUTH,EAST) //Which directions doors turfs
 
 	if(difference) //We have a difference, activate the zone.
 		SetStatus(ZONE_ACTIVE)
+
+	return
+
+
+/zone/proc/SleepIfPossible(var/skip_unsim_settle = 0)
+	if(status == ZONE_SLEEPING)
+		return
+
+	var/difference = 0
+
+	if(unsimulated_tiles && unsimulated_tiles.len)
+		UpdateUnsimAvg()
+		if(!air.compare(air_unsim))
+			difference = 1
+
+	if(!difference)
+		for(var/zone/Z in connected_zones) //Check adjacent zones for air difference.
+			if(!air.compare(Z.air))
+				difference = 1
+				break
+
+	if(!difference) //We have no differences, let the zone sleep.
+		SetStatus(ZONE_SLEEPING, skip_unsim_settle)
 
 	return
 

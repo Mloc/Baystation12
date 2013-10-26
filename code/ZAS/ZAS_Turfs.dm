@@ -37,8 +37,6 @@
 
 /turf/simulated/var/current_graphic = null
 
-/turf/simulated/var/tmp/datum/gas_mixture/air
-
 /turf/simulated/var/tmp/processing = 1
 
 /turf/simulated/var/tmp/air_check_directions = 0 //Do not modify this, just add turf to air_master.tiles_to_update
@@ -64,16 +62,6 @@
 	..()
 
 	if(!blocks_air)
-		air = new
-
-		air.oxygen = oxygen
-		air.carbon_dioxide = carbon_dioxide
-		air.nitrogen = nitrogen
-		air.toxins = toxins
-
-		air.temperature = temperature
-		air.update_values()
-
 		if(air_master)
 			air_master.tiles_to_update.Add(src)
 
@@ -105,24 +93,12 @@
 /turf/simulated/return_air()
 	if(zone)
 		return zone.air
-	else if(air)
-		return air
-
 	else
 		return ..()
 
 /turf/simulated/remove_air(amount as num)
 	if(zone)
 		return zone.remove_air(amount)
-
-	else if(air)
-		var/datum/gas_mixture/removed = null
-		removed = air.remove(amount)
-
-		if(air.check_tile_graphic())
-			update_visuals(air)
-		return removed
-
 	else
 		return ..()
 

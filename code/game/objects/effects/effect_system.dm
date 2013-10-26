@@ -61,14 +61,11 @@ would spawn and follow the beaker, even if it is carried or thrown.
 	if (--src.life < 1)
 		//SN src = null
 		delete()
+	if(reagents)
+		reagents.reaction(newloc)
 	if(newloc.density)
 		return 0
 	.=..()
-
-/obj/effect/effect/water/Bump(atom/A)
-	if(reagents)
-		reagents.reaction(A)
-	return ..()
 
 
 /datum/effect/effect/system

@@ -13,7 +13,7 @@
 	opacity = 1
 	density = 1
 	blocks_air = 1
-	temperature = TCMB
+	temperature = T20C
 	var/mineralName = ""
 	var/mineralAmt = 0
 	var/spread = 0 //will the seam spread?
@@ -613,7 +613,7 @@ commented out in r5061, I left it because of the shroom thingies
 	icon_state = "asteroid"
 	oxygen = 0.01
 	nitrogen = 0.01
-	temperature = TCMB
+	temperature = T20C
 	icon_plating = "asteroid"
 	var/dug = 0       //0 = has not yet been dug, 1 = has already been dug
 
