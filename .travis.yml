@@ -11,4 +11,5 @@ install:
   - cd ..
 
 script:
+  - ldd `which DreamMaker`
   - DreamMaker baystation12.dme
