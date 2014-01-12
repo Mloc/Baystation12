@@ -1,0 +1,2 @@
+export BYOND_MAJOR=503
+export BYOND_MINOR=1224
