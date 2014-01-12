@@ -12,4 +12,4 @@ script:
   - pwd
   - ls /usr/local/byond/bin
   - file /usr/local/byond/bin/DreamMaker
-  - DreamMaker baystation12.dme
+  - /usr/local/byond/bin/DreamMaker baystation12.dme
