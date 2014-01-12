@@ -1,5 +1,7 @@
 before_install:
   - source ./.byond-version.sh
+  - sudo apt-get update -qq
+  - sudo apt-get install ia32-libs -qq
 
 install:
   - curl "http://www.byond.com/download/build/${BYOND_MAJOR}/${BYOND_MAJOR}.${BYOND_MINOR}_byond_linux.zip" -o byond.zip
@@ -9,7 +11,4 @@ install:
   - cd ..
 
 script:
-  - pwd
-  - ls /usr/local/byond/bin
-  - file /usr/local/byond/bin/DreamMaker
-  - /usr/local/byond/bin/DreamMaker baystation12.dme
+  - DreamMaker baystation12.dme
