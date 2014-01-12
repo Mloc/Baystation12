@@ -4,8 +4,10 @@ before_install:
 install:
   - curl "http://www.byond.com/download/build/${BYOND_MAJOR}/${BYOND_MAJOR}.${BYOND_MINOR}_byond_linux.zip" -o byond.zip
   - unzip byond.zip
-  - make -f byond/Makefile here
+  - cd byond
+  - make here
   - source byond/bin/byondsetup
+  - cd ..
 
 script:
   - DreamMaker baystation12.dme
