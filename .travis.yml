@@ -6,7 +6,7 @@ install:
   - unzip byond.zip
   - cd byond
   - make here
-  - source byond/bin/byondsetup
+  - source bin/byondsetup
   - cd ..
 
 script:
