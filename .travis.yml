@@ -9,5 +9,5 @@ install:
   - cd ..
 
 script:
-  - ldd `which DreamMaker`
+  - ldd /usr/local/bin/DreamMaker
   - DreamMaker baystation12.dme
