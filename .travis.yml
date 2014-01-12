@@ -9,5 +9,6 @@ install:
   - cd ..
 
 script:
+  - file /usr/local/byond/bin/DreamMaker
   - ldd /usr/local/byond/bin/DreamMaker
   - DreamMaker baystation12.dme
