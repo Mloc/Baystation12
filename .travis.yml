@@ -9,4 +9,6 @@ install:
   - cd ..
 
 script:
+  - pwd
+  - ls
   - DreamMaker baystation12.dme
