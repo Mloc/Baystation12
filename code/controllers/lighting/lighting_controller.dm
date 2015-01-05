@@ -54,7 +54,7 @@ datum/controller/lighting/proc/process()
 				for(var/i=1, i<=changed_turfs.len, i++)
 					var/turf/T = changed_turfs[i]
 					if(T && T.lighting_changed)
-						T.shift_to_subarea()
+						T.update_lighting_overlays()
 				changed_turfs.Cut()		// reset the changed list
 
 				process_cost = (world.timeofday - started)
@@ -87,7 +87,7 @@ datum/controller/lighting/proc/initializeLighting(var/z_level)
 			for(var/i=1,i<=world.maxx,i++)
 				for(var/j=1,j<=world.maxy,j++)
 					var/turf/T = locate(i,j,k)
-					if(T)	T.shift_to_subarea()
+					if(T) new /atom/movable/lighting_overlay(T)
 
 		changed_turfs.Cut()		// reset the changed list
 
@@ -112,7 +112,7 @@ datum/controller/lighting/proc/Recover()
 		var/turf/T = lighting_controller.changed_turfs[i]
 		if(istype(T) && T.lighting_changed)
 			spawn(-1)
-				T.shift_to_subarea()
+				T.update_lighting_overlays()
 
 	var/msg = "## DEBUG: [time2text(world.timeofday)] lighting_controller restarted. Reports:\n"
 	for(var/varname in lighting_controller.vars)
