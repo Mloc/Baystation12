@@ -8,7 +8,6 @@ var/global/datum/controller/process/tgui/tgui_process
 /datum/controller/process/tgui/setup()
 	name = "tgui"
 	schedule_interval = 10 // every 2 seconds
-	start_delay = 23
 
 	basehtml = file2text('tgui/tgui.html') // Read the HTML from disk.
 	tgui_process = src
@@ -18,10 +17,10 @@ var/global/datum/controller/process/tgui/tgui_process
 		var/datum/tgui/ui = gui
 		if(ui && ui.user && ui.src_object)
 			ui.process()
-			SCHECK
+			scheck()
 			continue
 		processing_uis.Remove(ui)
-		SCHECK
+		scheck()
 
 /datum/controller/process/tgui/statProcess()
 	..()

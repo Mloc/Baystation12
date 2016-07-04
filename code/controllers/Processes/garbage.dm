@@ -23,7 +23,6 @@ var/list/delayed_garbage = list()
 /datum/controller/process/garbage_collector/setup()
 	name = "garbage"
 	schedule_interval = 5 SECONDS
-	start_delay = 3
 
 	if(!garbage_collector)
 		garbage_collector = src
@@ -82,7 +81,7 @@ world/loop_checks = 0
 		tick_dels++
 		total_dels++
 		destroyed.Cut(1, 2)
-		SCHECK
+		scheck()
 
 #undef GC_FORCE_DEL_PER_TICK
 #undef GC_COLLECTION_TIMEOUT
@@ -196,7 +195,7 @@ world/loop_checks = 0
 
 /turf/finalize_qdel()
 	del(src)
-	
+
 /area/finalize_qdel()
     del(src)
 
