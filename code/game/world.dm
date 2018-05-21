@@ -661,16 +661,16 @@ proc/setup_database_connection()
 	if(failed_db_connections > FAILED_DB_CONNECTION_CUTOFF)	//If it failed to establish a connection more than 5 times in a row, don't bother attempting to conenct anymore.
 		return 0
 
-	if(!dbcon)
-		dbcon = new()
-
 	var/user = sqlfdbklogin
 	var/pass = sqlfdbkpass
 	var/db = sqlfdbkdb
 	var/address = sqladdress
 	var/port = sqlport
 
-	dbcon.Connect("dbi:mysql:[db]:[address]:[port]","[user]","[pass]")
+	if(!dbcon)
+		dbcon = new("dbi:mysql:[db]:[address]:[port]","[user]","[pass]")
+
+	dbcon.Connect()
 	. = dbcon.IsConnected()
 	if ( . )
 		failed_db_connections = 0	//If this connection succeeded, reset the failed connections counter.
@@ -704,16 +704,16 @@ proc/setup_old_database_connection()
 	if(failed_old_db_connections > FAILED_DB_CONNECTION_CUTOFF)	//If it failed to establish a connection more than 5 times in a row, don't bother attempting to conenct anymore.
 		return 0
 
-	if(!dbcon_old)
-		dbcon_old = new()
-
 	var/user = sqllogin
 	var/pass = sqlpass
 	var/db = sqldb
 	var/address = sqladdress
 	var/port = sqlport
 
-	dbcon_old.Connect("dbi:mysql:[db]:[address]:[port]","[user]","[pass]")
+	if(!dbcon_old)
+		dbcon_old = new("dbi:mysql:[db]:[address]:[port]","[user]","[pass]")
+
+	dbcon_old.Connect()
 	. = dbcon_old.IsConnected()
 	if ( . )
 		failed_old_db_connections = 0	//If this connection succeeded, reset the failed connections counter.

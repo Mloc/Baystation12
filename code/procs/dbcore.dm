@@ -102,6 +102,8 @@ DBQuery/proc/Connect(DBConnection/connection_handler) src.db_connection = connec
 
 DBQuery/proc/Execute(sql_query=src.sql,cursor_handler=default_cursor)
 	Close()
+	if(!db_connection.IsConnected())
+		db_connection.Connect()
 	return _dm_db_execute(_db_query,sql_query,db_connection._db_con,cursor_handler,null)
 
 DBQuery/proc/NextRow() return _dm_db_next_row(_db_query,item,conversions)
