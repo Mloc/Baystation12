@@ -1,0 +1,14 @@
+clone:
+  git:
+    image: plugins/git
+    depth: 5
+
+pipeline:
+  deploy:
+    image: plugins/docker:17.05
+    repo: bs12/baystation12
+    tags: [latest]
+    secrets: [docker_username, docker_password]
+    when:
+      #branch: dev
+      event: push
