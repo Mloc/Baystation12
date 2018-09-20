@@ -1,0 +1,16 @@
+# Docker image
+# Build a Docker image to run, deploy, or push to a container registry.
+# Add steps that use Docker Compose, tag images, push to a registry, run an image, and more:
+# https://docs.microsoft.com/vsts/pipelines/languages/docker
+
+pool:
+  vmImage: 'Ubuntu 16.04'
+
+variables:
+  imageName: 'your-container-image-name:$(build.buildId)'
+
+steps:
+- script: git clone https://github.com/Baystation12/custom-items
+  displayName: 'clone custom items'
+- script: docker build -f Dockerfile --build-arg BUILD_ARGS="-Icustom-items/inc.dm" -t $(imageName) .
+  displayName: 'docker build'
