@@ -19,3 +19,5 @@ var/global/datum/global_init/init = new ()
 
 /datum/global_init/Destroy()
 	return 1
+
+CUSTOM_ITEM_CONFIG += CUSTOM_ITEM_SYNTH_CONFIG
