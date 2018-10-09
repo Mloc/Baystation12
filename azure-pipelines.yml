@@ -12,7 +12,7 @@ steps:
   displayName: 'build'
   inputs:
     imageName: '$(imageName)'
-    buildArguments: BUILD_ARGS='-Icustom-items/inc.dm'
+    buildArguments: BUILD_ARGS=-Icustom-items/inc.dm
 
 - task: Docker@1
   displayName: 'registry login'

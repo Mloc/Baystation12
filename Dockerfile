@@ -7,6 +7,7 @@ COPY . /bs12
 
 WORKDIR /bs12
 
+RUN echo $BUILD_ARGS
 RUN apt-get update && apt-get install -y gosu
 RUN scripts/dm.sh $BUILD_ARGS baystation12.dme
 
