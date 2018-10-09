@@ -8,7 +8,7 @@ steps:
 - script: git clone https://github.com/Baystation12/custom-items
   displayName: 'clone custom items'
 
-- task: Docker@1
+- task: Docker@0
   displayName: 'build'
   inputs:
     imageName: '$(imageName)'
