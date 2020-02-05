@@ -24,12 +24,15 @@ FROM xales/byond:512-latest
 ARG BUILD_ARGS
 ENV RUNAS=root
 
+RUN apt-get update && apt-get install -y gosu
+
 COPY . /bs12
 COPY --from=0 /byhttp/to_copy /bs12/lib
 
 WORKDIR /bs12
-RUN apt-get update && apt-get install -y gosu
 RUN scripts/dm.sh $BUILD_ARGS baystation12.dme
+
+RUN apt-get update && apt-get install -y strace
 
 EXPOSE 8000
 VOLUME /bs12/data
