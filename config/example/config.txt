@@ -410,3 +410,9 @@ RADIATION_LOWER_LIMIT 0.15
 ## Add lines of 'DISALLOW_VOTABLE_MODE config_tag' to prevent a normally votable mode from being votable, eg:
 ## DISALLOW_VOTABLE_MODE changeling
 ## DISALLOW_VOTABLE_MODE malfunction
+
+## Fluentd server to send log messages to.
+## Server must be compiled with USE_STRUCTURED_LOGGING defined.
+#FORWARD_LOGS_HOST some.fluentd.host:24224
+## Tag to use for fluentd log messages.
+#FORWARD_LOGS_TAG ss13.game

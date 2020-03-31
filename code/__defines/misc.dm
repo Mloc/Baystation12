@@ -278,3 +278,19 @@
 //Misc text define. Does 4 spaces. Used as a makeshift tabulator.
 #define FOURSPACES "&nbsp;&nbsp;&nbsp;&nbsp;"
 #define CLIENT_FROM_VAR(I) (ismob(I) ? I:client : (isclient(I) ? I : (istype(I, /datum/mind) ? I:current?:client : null)))
+
+#ifdef USE_STRUCTURED_LOGGING
+
+#ifndef WINDOWS_LOG_DLL_LOCATION
+#define WINDOWS_LOG_DLL_LOCATION "lib/fluey.dll"
+#endif
+
+#ifndef UNIX_LOG_DLL_LOCATION
+#define UNIX_LOG_DLL_LOCATION "lib/libfluey.so"
+#endif
+
+#ifndef LOG_DLL_LOCATION
+#define LOG_DLL_LOCATION (world.system_type == MS_WINDOWS ? WINDOWS_LOG_DLL_LOCATION : UNIX_LOG_DLL_LOCATION)
+#endif
+
+#endif
