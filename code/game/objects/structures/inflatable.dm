@@ -61,6 +61,7 @@
 	density = 1
 	anchored = 1
 	opacity = 0
+	atmos_canpass = CANPASS_DENSITY
 	icon = 'icons/obj/inflatable.dmi'
 	icon_state = "wall"
 	atmos_canpass = CANPASS_DENSITY
