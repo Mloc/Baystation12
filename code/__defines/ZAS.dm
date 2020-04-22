@@ -11,6 +11,8 @@ GLOBAL_VAR_INIT(zas_debug_overlays, FALSE)
 
 #define ZONE_MIN_SIZE 14 //zones with less than this many turfs will always merge, even if their gas contents aren't equivalent
 
+#define ZONE_MAX_DIMENSIONS 16
+
 #define CANPASS_ALWAYS 1
 #define CANPASS_DENSITY 2
 #define CANPASS_PROC 3

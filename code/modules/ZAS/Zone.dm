@@ -53,6 +53,12 @@ Class Procs:
 	var/list/graphic_remove = list()
 	var/last_air_temperature = TCMB
 
+	// upper-bound bounding box on this zone's contents. Z is ignored.
+	var/min_x
+	var/min_y
+	var/max_x
+	var/max_y
+
 /zone/New()
 	SSair.add_zone(src)
 	air.temperature = TCMB
@@ -70,6 +76,18 @@ Class Procs:
 	add_tile_air(turf_air)
 	T.zone = src
 	contents.Add(T)
+
+	if(isnull(min_x))
+		min_x = T.x
+		min_y = T.y
+		max_x = T.x
+		max_y = T.y
+	else
+		min_x = min(min_x, T.x)
+		min_y = min(min_y, T.y)
+		max_x = max(max_x, T.x)
+		max_y = max(max_y, T.y)
+
 	if(T.fire)
 		var/obj/effect/decal/cleanable/liquid_fuel/fuel = locate() in T
 		fire_tiles.Add(T)

@@ -262,6 +262,24 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 	var/d = GET_DIR_MZ(A, B)
 	return (!(A.open_directions_air & d) && AIR_BLOCKED) | (!(A.open_directions_zone & d) && ZONE_BLOCKED)
 
+/datum/controller/subsystem/air/proc/try_merge(zone/A, zone/B)
+	#ifdef ZASDBG
+	ASSERT(istype(A))
+	ASSERT(istype(B))
+	ASSERT(!A.invalid)
+	ASSERT(!B.invalid)
+	ASSERT(A != B)
+	#endif
+
+	var/span_x = max(A.max_x, B.max_x) - min(A.min_x, B.min_y)
+	var/span_y = max(A.max_y, B.max_y) - min(A.min_y, B.min_y)
+
+	if(span_x <= ZONE_MAX_DIMENSIONS && span_y <= ZONE_MAX_DIMENSIONS)
+		merge(A, B)
+		return 1
+	
+	return 0
+
 /datum/controller/subsystem/air/proc/merge(zone/A, zone/B)
 	#ifdef ZASDBG
 	ASSERT(istype(A))
@@ -299,8 +317,8 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 		// cases cause large pressure differentials to instantly equalize with no airflow effects.
 		// this is the least bad of the options, for now.
 		if(direct && (min(A.zone.contents.len, B.zone.contents.len) < ZONE_MIN_SIZE || equivalent_pressure(A.zone,B.zone) || times_fired == 0))
-			merge(A.zone,B.zone)
-			return
+			if(try_merge(A.zone,B.zone))
+				return
 
 	var/a_to_b = GET_DIR_MZ(A,B)
 	var/b_to_a = GET_DIR_MZ(B,A)

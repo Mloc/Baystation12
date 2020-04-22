@@ -172,9 +172,8 @@ Class Procs:
 		flow(repelled, abs(differential), 1)
 
 	if(equiv)
-		if(direct)
+		if(direct && SSair.try_merge(A, B))
 			erase()
-			SSair.merge(A, B)
 			return
 		else
 			A.air.equalize(B.air)
