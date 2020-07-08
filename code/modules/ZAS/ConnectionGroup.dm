@@ -42,9 +42,16 @@ Class Procs:
 
 	erase()
 		Removes this connection from processing and zone edge lists.
+	
+	get_archived_pressure_diff()
+		Returns absolute pressure difference over the edge.
 
 	tick()
 		Called every air tick on edges in the processing list. Equalizes gas.
+
+	post_tick()
+		Called every air tick on edges in the processing list, after every edge has had tick() called.
+		Puts edge to sleep if gas difference is small enough.
 
 	flow(list/movable, differential, repelled)
 		Airflow proc causing all objects in movable to be checked against a pressure differential.
@@ -65,6 +72,10 @@ Class Procs:
 /connection_edge/var/sleeping = 1
 
 /connection_edge/var/coefficient = 0
+
+// transient gas flow vars
+/connection_edge/var/gf_pressure_delta
+/connection_edge/var/gf_flow_moles
 
 /connection_edge/New()
 	CRASH("Cannot make connection edge without specifications.")
@@ -89,8 +100,11 @@ Class Procs:
 	SSair.remove_edge(src)
 //	log_debug("[type] Erased.")
 
+/connection_edge/proc/get_score()
 
-/connection_edge/proc/tick()
+/connection_edge/proc/tick(gf_iter)
+
+/connection_edge/proc/post_tick()
 
 /connection_edge/proc/recheck()
 
@@ -150,12 +164,36 @@ Class Procs:
 	B.edges.Remove(src)
 	. = ..()
 
-/connection_edge/zone/tick()
+/connection_edge/zone/get_score()
+	var/pdiff = abs(A.gf_air_archive.return_pressure() - B.gf_air_archive.return_pressure())
+	return coefficient + 2*sqrt(pdiff)
+
+/connection_edge/zone/tick(gf_iter)
 	if(A.invalid || B.invalid)
 		erase()
 		return
+	
+	if(A.gf_iter != gf_iter)
+		A.pre_flow()
+	
+	if(B.gf_iter != gf_iter)
+		B.pre_flow()
 
-	var/equiv = A.air.share_ratio(B.air, coefficient)
+	// each zone will assign us a ratio. go with the smaller one, this means we won't exceed the
+	// limits of the higher-ratio zone.
+	var/edge_score = get_score()
+	var/A_ratio = A.gf_prop * (edge_score / A.gf_score_sum)
+	var/B_ratio = B.gf_prop * (edge_score / B.gf_score_sum)
+
+	var/minor_ratio = min(A_ratio, B_ratio)
+	
+	if(A.gf_air_archive.return_pressure() < B.gf_air_archive.return_pressure())
+		gas_share_ratio(A.air, A.gf_air_archive, B.air, B.gf_air_archive, minor_ratio, max(minor_ratio, B_ratio))
+	else
+		gas_share_ratio(B.air, B.gf_air_archive, A.air, A.gf_air_archive, minor_ratio, max(minor_ratio, A_ratio))
+
+	//var/ratio = min(A.gf_prop * (edge_score / A.gf_score_sum), B.gf_prop * (edge_score / B.gf_score_sum))
+
 
 	var/differential = A.air.return_pressure() - B.air.return_pressure()
 	if(abs(differential) >= vsc.airflow_lightest_pressure)
@@ -171,16 +209,16 @@ Class Procs:
 		flow(attracted, abs(differential), 0)
 		flow(repelled, abs(differential), 1)
 
-	if(equiv)
+	SSair.mark_zone_update(A)
+	SSair.mark_zone_update(B)
+
+/connection_edge/zone/post_tick()
+	if(A.air.compare(B.air))
 		if(direct && SSair.try_merge(A, B))
 			erase()
-			return
 		else
 			A.air.equalize(B.air)
 			SSair.mark_edge_sleeping(src)
-
-	SSair.mark_zone_update(A)
-	SSair.mark_zone_update(B)
 
 /connection_edge/zone/recheck()
 	if(!A.air.compare(B.air, vacuum_exception = 1))
@@ -221,23 +259,33 @@ Class Procs:
 /connection_edge/unsimulated/contains_zone(zone/Z)
 	return A == Z
 
-/connection_edge/unsimulated/tick()
+/connection_edge/unsimulated/get_score()
+	var/pdiff = abs(A.gf_air_archive.return_pressure() - air.return_pressure())
+	return (coefficient + 2*sqrt(pdiff)) * 10 // unsim edges have a heavy weighting due to "infinite" volume
+
+/connection_edge/unsimulated/tick(gf_iter)
 	if(A.invalid)
 		erase()
 		return
 
-	var/equiv = A.air.share_space(air)
+	if(A.gf_iter != gf_iter)
+		A.pre_flow()
+
+	var/ratio = A.gf_prop * (get_score() / A.gf_score_sum)
+	gas_share_ratio(A.air, A.gf_air_archive, air, air, ratio, ratio, (A.air.group_multiplier+3)*3, 1)
 
 	var/differential = A.air.return_pressure() - air.return_pressure()
 	if(abs(differential) >= vsc.airflow_lightest_pressure)
 		var/list/attracted = A.movables()
 		flow(attracted, abs(differential), differential < 0)
 
-	if(equiv)
+	SSair.mark_zone_update(A)
+
+/connection_edge/unsimulated/post_tick()
+	if(A.air.compare(air))
 		A.air.copy_from(air)
 		SSair.mark_edge_sleeping(src)
-
-	SSair.mark_zone_update(A)
+		SSair.mark_zone_update(A)
 
 /connection_edge/unsimulated/recheck()
 	// Edges with only one side being vacuum need processing no matter how close.

@@ -10,6 +10,8 @@ services:
   game:
     build:
       context: ..
+      #args:
+        #- BUILD_ARGS=-Mexample
     image: bs12:latest
     environment:
       - RUNAS=1000

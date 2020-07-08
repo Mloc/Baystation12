@@ -224,10 +224,10 @@ var/list/debug_verbs = list (
 			images += get_zas_image(T, "blue")
 			testZAScolors_turfs += T
 
-		if(Z in testZAScolors_zones)
-			continue
 		testZAScolors_zones += Z
 
+	for(var/connection_edge/zone/edge in location.zone.edges)
+		var/zone/Z = edge.get_connected_zone(location.zone)
 		for(var/connection_edge/zone/z_edge in Z.edges)
 			var/zone/connected = z_edge.get_connected_zone(Z)
 			if(connected in testZAScolors_zones)

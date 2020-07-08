@@ -207,7 +207,7 @@
 						//Postpone this tile rather than exit, since a connection can still be made.
 						LAZYADD(postponed, sim)
 
-					else
+					else if(sim.zone.can_add(src))
 
 						sim.zone.add(src)
 
@@ -215,6 +215,9 @@
 						dbg(assigned)
 						if(GLOB.zas_debug_verbose) log_debug("Added to [zone]")
 						#endif
+					
+					else
+						LAZYADD(postponed, sim)
 
 				else if(sim.zone != zone)
 
@@ -240,7 +243,7 @@
 
 	if(!TURF_HAS_VALID_ZONE(src)) //Still no zone, make a new one.
 		var/zone/newzone = new/zone()
-		newzone.add(src)
+		newzone.seed_from(src)
 
 	#ifdef ZASDBG
 		dbg(created)

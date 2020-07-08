@@ -22,7 +22,7 @@
 
 #define CELSIUS + T0C
 
-#define ATMOS_PRECISION 0.0001
+#define ATMOS_PRECISION 0.000001
 #define QUANTIZE(variable) (round(variable, ATMOS_PRECISION))
 
 #define INFINITY	1.#INF

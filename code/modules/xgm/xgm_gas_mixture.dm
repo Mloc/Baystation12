@@ -411,57 +411,16 @@
 	update_values()
 	return 1
 
-
-//Shares gas with another gas_mixture based on the amount of connecting tiles and a fixed lookup table.
-/datum/gas_mixture/proc/share_ratio(datum/gas_mixture/other, connecting_tiles, share_size = null, one_way = 0)
-	var/static/list/sharing_lookup_table = list(0.30, 0.40, 0.48, 0.54, 0.60, 0.66)
-	//Shares a specific ratio of gas between mixtures using simple weighted averages.
-	var/ratio = sharing_lookup_table[6]
-
-	var/size = max(1, group_multiplier)
-	if(isnull(share_size)) share_size = max(1, other.group_multiplier)
-
-	var/full_heat_capacity = heat_capacity()
-	var/s_full_heat_capacity = other.heat_capacity()
-
-	var/list/avg_gas = list()
-
+/datum/gas_mixture/proc/get_mass()
 	for(var/g in gas)
-		avg_gas[g] += gas[g] * size
+		. += gas[g] * gas_data.molar_mass[g] * group_multiplier
 
-	for(var/g in other.gas)
-		avg_gas[g] += other.gas[g] * share_size
+/datum/gas_mixture/proc/specific_mass()
+	var/M = get_total_moles()
+	if(M)
+		return get_mass()/M
 
-	for(var/g in avg_gas)
-		avg_gas[g] /= (size + share_size)
-
-	var/temp_avg = 0
-	if(full_heat_capacity + s_full_heat_capacity)
-		temp_avg = (temperature * full_heat_capacity + other.temperature * s_full_heat_capacity) / (full_heat_capacity + s_full_heat_capacity)
-
-	//WOOT WOOT TOUCH THIS AND YOU ARE A RETARD.
-	if(sharing_lookup_table.len >= connecting_tiles) //6 or more interconnecting tiles will max at 42% of air moved per tick.
-		ratio = sharing_lookup_table[connecting_tiles]
-	//WOOT WOOT TOUCH THIS AND YOU ARE A RETARD
-
-	for(var/g in avg_gas)
-		gas[g] = max(0, (gas[g] - avg_gas[g]) * (1 - ratio) + avg_gas[g])
-		if(!one_way)
-			other.gas[g] = max(0, (other.gas[g] - avg_gas[g]) * (1 - ratio) + avg_gas[g])
-
-	temperature = max(0, (temperature - temp_avg) * (1-ratio) + temp_avg)
-	if(!one_way)
-		other.temperature = max(0, (other.temperature - temp_avg) * (1-ratio) + temp_avg)
-
-	update_values()
-	other.update_values()
-
-	return compare(other)
-
-
-//A wrapper around share_ratio for spacing gas at the same rate as if it were going into a large airless room.
-/datum/gas_mixture/proc/share_space(datum/gas_mixture/unsim_air)
-	return share_ratio(unsim_air, unsim_air.group_multiplier, max(1, max(group_multiplier + 3, 1) + unsim_air.group_multiplier), one_way = 1)
+// Global scope functions
 
 //Equalizes a list of gas mixtures.  Used for pipe networks.
 /proc/equalize_gases(list/datum/gas_mixture/gases)
@@ -503,11 +462,41 @@
 
 	return 1
 
-/datum/gas_mixture/proc/get_mass()
-	for(var/g in gas)
-		. += gas[g] * gas_data.molar_mass[g] * group_multiplier
+//Shares gas between two mixtures, moving up to a given ratio of air. Reads from archived gas, pass
+// same mix twice to if you don't care about this. Used by ZAS zone edges.
+/proc/gas_share_ratio(datum/gas_mixture/left, datum/gas_mixture/left_archive, datum/gas_mixture/right, datum/gas_mixture/right_archive, ratio, major_ratio = ratio, right_size = null, one_way = 0)
+	var/left_size = left.group_multiplier
+	if(isnull(right_size)) right_size = right.group_multiplier
 
-/datum/gas_mixture/proc/specific_mass()
-	var/M = get_total_moles()
-	if(M)
-		return get_mass()/M
+	var/left_heat_capacity = left_archive.heat_capacity()
+	var/right_heat_capacity = right_archive.heat_capacity()
+
+	var/list/avg_gas = list()
+
+	for(var/g in left_archive.gas)
+		avg_gas[g] += left_archive.gas[g] * left_size
+
+	for(var/g in right_archive.gas)
+		avg_gas[g] += right_archive.gas[g] * right_size
+
+	for(var/g in avg_gas)
+		avg_gas[g] /= (left_size + right_size)
+
+	var/temp_avg = 0
+	if(left_heat_capacity + right_heat_capacity)
+		temp_avg = (left_archive.temperature * left_heat_capacity + right_archive.temperature * right_heat_capacity) / (left_heat_capacity + right_heat_capacity)
+
+	for(var/g in avg_gas)
+		var/this_ratio = ratio
+		if(avg_gas[g] > left_archive.gas[g])
+			this_ratio = major_ratio
+		left.gas[g] += (avg_gas[g] - left_archive.gas[g]) * this_ratio
+		if(!one_way)
+			right.gas[g] += (avg_gas[g] - right_archive.gas[g]) * this_ratio
+
+	left.temperature = max(0, left.temperature + (temp_avg-left_archive.temperature)*ratio)
+	if(!one_way)
+		right.temperature = max(0, right.temperature + (temp_avg-right_archive.temperature)*ratio)
+
+	left.update_values()
+	right.update_values()

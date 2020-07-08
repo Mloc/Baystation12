@@ -59,6 +59,18 @@ Class Procs:
 	var/max_x
 	var/max_y
 
+	// transient vars used during gas flow
+	var/tmp/gf_iter
+	var/tmp/gf_prop
+	var/tmp/datum/gas_mixture/gf_air_archive = new
+	var/tmp/gf_score_sum
+
+	var/tmp/gf_max_out_delta
+	var/tmp/gf_out_delta_sum
+	var/tmp/gf_ts_state
+	var/tmp/list/gf_flow_in
+	var/tmp/list/gf_flow_out
+
 /zone/New()
 	SSair.add_zone(src)
 	air.temperature = TCMB
@@ -94,6 +106,59 @@ Class Procs:
 		SSair.active_fire_zones |= src
 		if(fuel) fuel_objs += fuel
 	T.update_graphic(air.graphic)
+
+/zone/proc/can_add(turf/simulated/T)
+	var/span_x = max(max_x, T.x) - min(min_x, T.x)
+	var/span_y = max(max_y, T.y) - min(min_y, T.y)
+	return span_x <= ZONE_MAX_DIMENSIONS_SEEDING && span_y <= ZONE_MAX_DIMENSIONS_SEEDING
+
+/zone/proc/pre_flow()
+	gf_air_archive.copy_from(air)
+	gf_air_archive.group_multiplier = air.group_multiplier
+
+	gf_score_sum = 0
+	for(var/connection_edge/E in edges)
+		if(!E.sleeping)
+			gf_score_sum += E.get_score()
+
+	gf_prop = 1 - 1/(gf_score_sum/sqrt(air.group_multiplier) + 1)
+
+/zone/proc/seed_from(turf/simulated/T)
+#ifdef ZASDBG
+	ASSERT(contents.len == 0)
+	ASSERT(!invalid)
+	ASSERT(istype(T))
+	ASSERT(!TURF_HAS_VALID_ZONE(T))
+#endif
+	var/list/open = list(T)
+	var/i = 1
+	while(i <= open.len)
+		var/turf/simulated/cur = open[open.len]
+		i++
+
+		if(TURF_HAS_VALID_ZONE(cur))
+			continue
+
+		if(cur.cell_consistent_directions != NORTH|SOUTH|EAST|WEST|UP|DOWN)
+			cur.update_open_directions()
+
+		add(cur)
+	
+		for(var/d = 1, d < 64, d *= 2)
+			if(!(cur.open_directions_zone & d))
+				continue
+			var/turf/simulated/cand = GET_ZSTEP(cur, d)
+
+			if(!istype(cand) || TURF_HAS_VALID_ZONE(cand))
+				continue
+
+			var/span_x = max(max_x, cand.x) - min(min_x, cand.x)
+			var/span_y = max(max_y, cand.y) - min(min_y, cand.y)
+
+			if(span_x > ZONE_MAX_DIMENSIONS_SEEDING || span_y > ZONE_MAX_DIMENSIONS_SEEDING)
+				continue
+
+			open += cand
 
 /zone/proc/remove(turf/simulated/T)
 #ifdef ZASDBG

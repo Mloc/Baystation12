@@ -365,7 +365,7 @@ obj/structure/ex_act(severity)
 
 	//note that share_ratio assumes both gas mixes have the same volume,
 	//so if the volume is changed this may need to be changed as well.
-	air_contents.share_ratio(environment, 1)
+	gas_share_ratio(air_contents, air_contents, environment, environment, 0.5)
 
 // When the player moves, check if the pos is currently stopped at a station.
 //  if it is, check the direction. If the direction matches the direction of

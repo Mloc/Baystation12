@@ -78,13 +78,16 @@ SUBSYSTEM_DEF(air)
 	var/list/active_hotspots = list()
 	var/list/active_edges = list()
 
+	var/tmp/list/processing_tiles
 	var/tmp/list/processing_edges
+	var/tmp/list/processing_edges_post
 	var/tmp/list/processing_fires
 	var/tmp/list/processing_hotspots
 	var/tmp/list/processing_zones
 
 	var/active_zones = 0
 	var/next_id = 1
+	var/gas_flow_iter = 0
 
 /datum/controller/subsystem/air/proc/reboot()
 	// Stop processing while we rebuild.
@@ -159,12 +162,16 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 
 /datum/controller/subsystem/air/fire(resumed = FALSE, no_mc_tick = FALSE)
 	if (!resumed)
+		processing_tiles = tiles_to_update.Copy()
+		tiles_to_update.Cut()
 		processing_edges = active_edges.Copy()
+		processing_edges_post = active_edges.Copy()
 		processing_fires = active_fire_zones.Copy()
 		processing_hotspots = active_hotspots.Copy()
 
-	var/list/curr_tiles = tiles_to_update
+	var/list/curr_tiles = processing_tiles
 	var/list/curr_edges = processing_edges
+	var/list/curr_edges_post = processing_edges_post
 	var/list/curr_fire = processing_fires
 	var/list/curr_hotspot = processing_hotspots
 	var/list/curr_zones = zones_to_update
@@ -181,7 +188,8 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 
 			continue
 
-		T.update_air_properties()
+		if(T.needs_air_update)
+			T.update_air_properties()
 		T.post_update_air_properties()
 		T.needs_air_update = 0
 
@@ -189,7 +197,7 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 			CHECK_TICK
 		else if (MC_TICK_CHECK)
 			return
-
+	
 	while (curr_edges.len)
 		var/connection_edge/edge = curr_edges[curr_edges.len]
 		curr_edges.len--
@@ -201,7 +209,25 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 				return
 			continue
 
-		edge.tick()
+		edge.tick(times_fired)
+
+		if (no_mc_tick)
+			CHECK_TICK
+		else if (MC_TICK_CHECK)
+			return
+
+	while (curr_edges_post.len)
+		var/connection_edge/edge = curr_edges_post[curr_edges_post.len]
+		curr_edges_post.len--
+
+		if (!edge)
+			if (no_mc_tick)
+				CHECK_TICK
+			else if (MC_TICK_CHECK)
+				return
+			continue
+
+		edge.post_tick()
 
 		if (no_mc_tick)
 			CHECK_TICK
@@ -242,6 +268,167 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 		else if (MC_TICK_CHECK)
 			return
 
+/*
+/datum/controller/subsystem/air/proc/move_gas()
+	var/static/list/coeff_shr_lut = list(0.30, 0.40, 0.48, 0.54, 0.60, 0.66)
+
+	gas_flow_iter++
+
+	var/list/involved_zones = list()
+	var/list/sleepy_edges = list()
+
+	var/list/unsim_in_zones = list()
+
+	while(curr_edges.len)
+		var/connection_edge/edge = curr_edges[curr_edges.len]
+
+		if(!edge || edge.sleeping)
+			continue
+
+		if(edge.A.gf_iter != gas_flow_iter)
+			involved_zones += edge.A
+			edge.A.gf_iter = gas_flow_iter
+			edge.A.gf_max_out_delta = 0
+			edge.A.gf_out_delta_sum = 0
+			edge.A.gf_ts_state = 0
+			edge.A.gf_flow_in = list()
+			edge.A.gf_flow_out = list()
+
+		var/connection_edge/zone/zone_edge = edge
+		if(istype(zone_edge))
+			if(zone_edge.B.gf_iter != gas_flow_iter)
+				involved_zones += zone_edge.B
+				zone_edge.B.gf_iter = gas_flow_iter
+				zone_edge.B.gf_max_out_delta = 0
+				zone_edge.B.gf_out_delta_sum = 0
+				zone_edge.B.gf_ts_state = 0
+				zone_edge.B.gf_flow_in = list()
+				zone_edge.B.gf_flow_out = list()
+
+			var/delta = zone_edge.B.air.return_pressure() - zone_edge.A.air.return_pressure()
+			zone_edge.gf_pressure_delta = delta
+
+			if(delta > 0)
+				zone_edge.A.gf_flow_out[zone_edge] = delta
+				zone_edge.B.gf_flow_in[zone_edge] = delta
+
+				zone_edge.A.gf_out_delta_sum += delta
+				zone_edge.A.gf_max_out_delta = max(delta, zone_edge.A.gf_max_out_delta)
+			else
+				zone_edge.A.gf_flow_in[zone_edge] = -delta
+				zone_edge.B.gf_flow_out[zone_edge] = -delta
+
+				zone_edge.B.gf_out_delta_sum += delta
+				zone_edge.B.gf_max_out_delta = max(-delta, zone_edge.B.gf_max_out_delta)
+		else
+			var/connection_edge/unsimulated/unsim_edge = edge
+			#ifdef ZASDBG
+			ASSERT(istype(unsim_edge))
+			#endif
+
+			var/delta = unsim_edge.air.return_pressure() - unsim_edge.A.air.return_pressure()
+			unsim_edge.gf_pressure_delta = delta
+
+			if(delta > 0)
+				unsim_edge.A.gf_flow_out[unsim_edge] = delta
+
+				zone_edge.A.gf_out_delta_sum += delta
+				zone_edge.A.gf_max_out_delta = max(delta, zone_edge.A.gf_max_out_delta)
+			else
+				unsim_edge.A.gf_flow_in[unsim_edge] = -delta
+				unsim_in_zones |= unsim_edge.A
+	
+	var/list/topsorted_zones = list()
+	var/list/topsorted_edges = list()
+
+	var/list/stack = list()
+	for(var/zone/Z in involved_zones)
+		if(Z.gf_ts_state != 0 || len(head.gf_flow_out == 0))
+			continue
+
+		while(stack.len)
+			var/zone/head = involved_zones[stack.len]
+			
+			// already pushed or needs no proc
+			if(head.gf_ts_state == -1)
+				continue
+			else if(head.gf_ts_state > 0)
+				#ifdef ZASDBG
+				// ensure DAG
+				ASSERT(head.gf_ts_state == stack.len)
+				#endif
+				topsorted_zones += head
+				// MANGLE FLOWAMT HERE
+				topsorted_edges += head.gf_flow_out
+				head.gf_ts_state = -1
+				stack.len--
+				continue
+			else if(head.gf_flow_out.len == 0)
+				head.gf_ts_state = -1
+				stack.len--
+				continue
+
+			head.gf_ts_state = stack.len
+			for(var/next in head.gf_flow_out)
+				var/
+				if(
+				stack += next
+
+	while(curr_edges.len)
+		var/connection_edge/edge = curr_edges[curr_edges.len]
+
+	for(var/i = 1 to topsorted_zones.len)
+		var/zone/Z = topsorted_zones[i]
+
+		var/zone_pressure = Z.air.return_pressure()
+		var/zone_moles = Z.air.get_total_moles()
+
+		var/mul = 0.5 * (Z.gf_max_out_delta / Z.gf_out_delta_sum)
+
+		var/edge_coeff_sum = 0
+		var/edge_mole_flow_sum = 0
+
+		for(var/connection_edge/E in Z.gf_flow_out)
+			edge_coeff_sum += E.coefficient
+			// absolute maximum amount of gas that can flow out this edge this tick
+			edge_mole_flow_sum = zone_moles * Z.gf_flow_out[E]/zone_pressure
+
+		// choose flow amount based on size of edges and zone
+		// - max proportion of air that will flow out of this zone this tick, across all edges
+		// this is very bad and unrealistic but it's ok for gameplay purposes
+		// to play with this in Desmos or similar use:
+		//  0.5-\frac{1}{\frac{c}{\sqrt{1+\frac{g}{32}}}+2}
+		// where c is the coefficient sum and g is the size of the zone
+		var/flow_proposal_mul = 0.5 - (1/((edge_coeff_sum/sqrt(1 + Z.air.group_multiplier/32))+2))
+
+		// this is probably saner
+		// var/flow_proposal = 0.5 - (1/(E.coefficient+2))
+
+		// total out moles adjusted for flow amount
+		var/flow_proposal_moles = edge_mole_flow_sum * flow_proposal_mul
+
+		// divvy out moles proportionally to coefficient
+		for(var/connection_edge/E in Z.gf_flow_out)
+			var/moles_out_max = zone_moles * Z.gf_flow_out[E]/zone_pressure
+			E.gf_flow_moles = min(moles_out_max, flow_proposal_moles * (E.coefficient / edge_coeff_sum))
+
+	for(var/i = 1 to topsorted_zones.len)
+		var/zone/Z = topsorted_zones[i]
+
+		var/zone_pressure = Z.air.return_pressure()
+		var/zone_moles = Z.air.get_total_moles()
+
+		var/total_moles_in = 0
+
+		for(var/connection_edge/E in Z.gf_flow_in)
+			total_moles_in += E.gf_flow_moles
+	
+	for(var/i = 1 to topsorted_edges.len)
+		var/connection_edge/E = topsorted_edges[i]
+		E.orinoco_flow()
+		//var/mul = 0.5 * (Z.gf_max_out_delta / Z.gf_out_delta_sum)
+*/
+
 /datum/controller/subsystem/air/proc/add_zone(zone/z)
 	zones += z
 	z.name = "Zone [next_id++]"
@@ -271,10 +458,10 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 	ASSERT(A != B)
 	#endif
 
-	var/span_x = max(A.max_x, B.max_x) - min(A.min_x, B.min_y)
+	var/span_x = max(A.max_x, B.max_x) - min(A.min_x, B.min_x)
 	var/span_y = max(A.max_y, B.max_y) - min(A.min_y, B.min_y)
 
-	if(span_x <= ZONE_MAX_DIMENSIONS && span_y <= ZONE_MAX_DIMENSIONS)
+	if(span_x <= ZONE_MAX_DIMENSIONS_MERGING && span_y <= ZONE_MAX_DIMENSIONS_MERGING)
 		merge(A, B)
 		return 1
 	
@@ -312,6 +499,8 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 	var/space = !istype(B)
 
 	if(!space)
+		if(A.zone == B.zone) return
+
 		// the ZONE_MIN_SIZE check here is a tradeoff to ensure that zones don't get too
 		// fragmented, causing airflow to slow to a crawl. this is far from ideal, and can in some
 		// cases cause large pressure differentials to instantly equalize with no airflow effects.
@@ -334,9 +523,6 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 		return
 	if(B.connections.get(b_to_a))
 		return
-	if(!space)
-		if(A.zone == B.zone) return
-
 
 	var/connection/c = new /connection(A,B)
 
