@@ -36,7 +36,7 @@
 		self_air_blocked = 1
 
 		return
-	
+
 	self_air_blocked = 0
 
 	for(var/d = 1, d <= DOWN, d *= 2)
@@ -65,7 +65,7 @@
 			nbr.open_directions_zone |= rev_d
 
 		nbr.cell_consistent_directions |= rev_d
-	
+
 	cell_consistent_directions = NORTH|SOUTH|EAST|WEST|UP|DOWN
 
 	return null
@@ -78,6 +78,9 @@
 		vis_contents -= graphic_remove
 
 /turf/proc/update_air_properties()
+	if(cell_consistent_directions != NORTH|SOUTH|EAST|WEST|UP|DOWN)
+		update_open_directions()
+
 	if(self_air_blocked)
 		return 1
 
@@ -215,7 +218,7 @@
 						dbg(assigned)
 						if(GLOB.zas_debug_verbose) log_debug("Added to [zone]")
 						#endif
-					
+
 					else
 						LAZYADD(postponed, sim)
 

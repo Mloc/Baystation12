@@ -197,7 +197,7 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 			CHECK_TICK
 		else if (MC_TICK_CHECK)
 			return
-	
+
 	while (curr_edges.len)
 		var/connection_edge/edge = curr_edges[curr_edges.len]
 		curr_edges.len--
@@ -337,7 +337,7 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 			else
 				unsim_edge.A.gf_flow_in[unsim_edge] = -delta
 				unsim_in_zones |= unsim_edge.A
-	
+
 	var/list/topsorted_zones = list()
 	var/list/topsorted_edges = list()
 
@@ -348,7 +348,7 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 
 		while(stack.len)
 			var/zone/head = involved_zones[stack.len]
-			
+
 			// already pushed or needs no proc
 			if(head.gf_ts_state == -1)
 				continue
@@ -422,7 +422,7 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 
 		for(var/connection_edge/E in Z.gf_flow_in)
 			total_moles_in += E.gf_flow_moles
-	
+
 	for(var/i = 1 to topsorted_edges.len)
 		var/connection_edge/E = topsorted_edges[i]
 		E.orinoco_flow()
@@ -464,7 +464,7 @@ Total Unsimulated Turfs: [world.maxx*world.maxy*world.maxz - simulated_turf_coun
 	if(span_x <= ZONE_MAX_DIMENSIONS_MERGING && span_y <= ZONE_MAX_DIMENSIONS_MERGING)
 		merge(A, B)
 		return 1
-	
+
 	return 0
 
 /datum/controller/subsystem/air/proc/merge(zone/A, zone/B)
